@@ -1,47 +1,48 @@
-# Define a headers dictionary to mimic a browser request
-headers = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.82 Safari/537.36',
-    'Accept-Language': 'en-US,en;q=0.9',
-    'Accept-Encoding': 'gzip, deflate, br',
-    'Connection': 'keep-alive'
-}
+import requests
+from bs4 import BeautifulSoup
+from datetime import datetime
+import pandas as pd
+import os
+import time
 
-def get_titles(list_link):
-    titles = []
-    for link in list_link:
-        response = requests.get(link, headers=headers)  # Add headers here
-        if response.status_code == 403:
-            print("Access denied on:", link)
-            continue
-        soup = BeautifulSoup(response.content, "html.parser")
-        title = soup.findAll('h3', class_='title')
-        for tit in title:
-            titles.append(tit)
-    return titles
+columns = ["url", "content"]
 
-def crawl_contents(filename, links_company):
-    setup_file(filename, False)
-    deli = ""
+run_time = "{:%d%m%Y}".format(datetime.now())
 
-    for link in links_company:
-        news = requests.get(link, headers=headers)  # Add headers here
-        if news.status_code == 403:
-            print("Access denied on:", link)
-            continue
-        soup = BeautifulSoup(news.content, "html.parser")
-        names_obj = soup.find('a', class_="company-logo")
-        if names_obj is None:
-            continue
-        names = names_obj.attrs["title"]
-        contents = soup.find("div", class_="job-data")
+def extract_load(link, find_con, url_header, classification):
+    t = requests.get(link).content
+    soup = BeautifulSoup(t, "html.parser")
+    links = soup.find_all('a')
+    data = []
 
-        data = {}
-        data['name'] = names
-        add_contents(contents, data)
-        print("Response status:", response.status_code)  # Check if the response is 200
-        print("Fetched titles:", title)  # After fetching titles
+    for i in links:
+        if str(i).find(find_con) != -1:
+            url = url_header + i["href"]
+            retries = 3
+            content = None
+            for attempt in range(retries):
+                try:
+                    content = requests.get(url, timeout=5).content
+                    break
+                except requests.exceptions.Timeout:
+                    if attempt < retries - 1:
+                        time.sleep(2)  # Wait before retrying
+                    else:
+                        print(f"Skipping {url} due to repeated timeouts.")
+                        content = None
+            
+            if content:
+                tmp = (url, content.decode("utf-8", errors="ignore"))
+                data.append(tmp)
+    
+    if not os.path.exists(classification):
+        os.makedirs(classification)
 
-        write_file(filename, data, deli)
-        deli = ",\n"
-        print(data)
-    setup_file(filename, True)
+    df = pd.DataFrame(data, columns=columns)
+    df.to_parquet(f"{classification}/{run_time}.csv", index=False)
+    print(f"Data saved to {classification}/{run_time}.csv")
+
+if __name__ == "__main__":
+    # extract_load("https://www.topcv.vn/tim-viec-lam-it-phan-mem-c10026?salary=0&exp=0&company_field=0&sort=up_top&page=", "/apps/details", "https://www.topcv.vn", "top_CV")
+    extract_load("https://www.topcv.vn/tim-viec-lam-it-phan-mem-c10026?salary=0&exp=0&company_field=0&sort=up_top&page=", "/apps/details", "https://www.topcv.vn", "Data")
+    # extract_load("https://play.google.com/store/games?device=tablet", "/apps/details", "https://play.google.com", "google_play_tablet")

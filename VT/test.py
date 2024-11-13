@@ -30,7 +30,7 @@ def extract_load(link, find_con, url_header, classification):
 
 			tmp = tuple((url, content.decode("utf-8")))
 			data.append(tmp)
-
+	print(data)	
 	df = pandas.DataFrame(data = data, columns = columns)
 	df.to_parquet(classification + "/" + run_time + ".parquet")
 	# df.write.mode("overwrite").parquet("hdfs://namenode:9000/" + classification + "/" + run_time)

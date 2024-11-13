@@ -1,3 +1,10 @@
+// package spark.main;
+
+// public class Main {
+//     public static void main(String[] args) {
+//         System.out.println("Hello world!");
+//     }
+// }
 package spark.main;
 
 import java.util.Arrays;
@@ -18,7 +25,7 @@ public class Main {
 					.mapToPair(word -> new Tuple2<>(word, 1))
 					.reduceByKey((a,b) -> (a+b));
 			
-			result.saveAsTextFile("hdfs://localhost:9000/output/result");
+			result.saveAsTextFile("hdfs://localhost:9000/output-spark/result");
 		}
 	}
 }

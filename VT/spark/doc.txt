@@ -1,0 +1,45 @@
+su - hdoop
+
+cd $HADOOP_HOME/sbin
+./start-dfs.sh
+./start-yarn.sh
+./stop-dfs.sh
+./stop-yarn.sh
+hdfs dfs -mkdir /data
+
+
+cd $SPARK_HOME/sbin
+./start-master.sh
+./start-worker.sh spark://vtzy-Lenovo-Legion-7-15IMH05:7077 
+
+source ~/Documents/code/programming/mandelbros/myenv/bin/activate
+
+source /home/shared/bigdata_btl/myenv/bin/activate
+cd /home/shared/bigdata_btl 
+
+
+hdfs dfs -copyFromLocal input.txt /
+hdfs dfs -ls /
+hadoop jar target/wordcount-V1.jar com.hadoop.mapreduce.WordCount hdfs://localhost:9000/input.txt hdfs://localhost:9000/output-hadoop
+http://localhost:8088/cluster
+hdfs dfs -cat /output/part-r-00000
+
+hadoop fs -rm -r /output
+
+
+
+cd /home/shared/IT4391_Group17_2024.1/VT
+spark-submit --class spark.main.Main target/spark-1.0-SNAPSHOT.jar
+
+
+
+spark-shell --master  spark://vtzy-Lenovo-Legion-7-15IMH05:7077 
+val textFile = sc.textFile("hdfs://localhost:9000/input/input-1.txt")
+val counts = textFile.flatMap(line => line.split(" ")).map(word => (word, 1)).reduceByKey(_ + _)
+counts.saveAsTextFile("hdfs://localhost:9000/output-scala/")
+
+cd /home/shared/kafka_2.13-3.8.1 
+bin/zookeeper-server-start.sh config/zookeeper.properties
+bin/kafka-server-start.sh config/server.properties
+
+
