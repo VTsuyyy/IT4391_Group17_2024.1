@@ -11,6 +11,9 @@ hdfs dfs -mkdir /data
 cd $SPARK_HOME/sbin
 ./start-master.sh
 ./start-worker.sh spark://vtzy-Lenovo-Legion-7-15IMH05:7077 
+./stop-master.sh
+./stop-worker.sh
+
 
 source ~/Documents/code/programming/mandelbros/myenv/bin/activate
 
